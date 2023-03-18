@@ -8,7 +8,7 @@ import { JwtModule } from '@nestjs/jwt';
 import config from 'config';
 import { JwtModuleConfig } from './auth/types';
 import { PassportModule } from '@nestjs/passport';
-import { BillingModule } from 'src/billing/billing.module';
+import { BillingModule } from '../billing/billing.module';
 
 const jwtConfig = config.get<JwtModuleConfig>('jwt');
 

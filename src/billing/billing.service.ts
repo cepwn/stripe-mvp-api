@@ -10,4 +10,10 @@ export class BillingService {
       email,
     });
   }
+
+  public createProduct(name: string): Promise<Stripe.Product> {
+    return this.stripeClient.products.create({
+      name,
+    });
+  }
 }

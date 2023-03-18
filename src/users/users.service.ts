@@ -4,12 +4,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { AccessCredentialsDto } from './user.dto';
+import { PostAccessCredentialsDto } from './user.dto';
 import { User } from './user.model';
 import bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAccessPayload } from './auth/types';
-import { BillingService } from 'src/billing/billing.service';
+import { BillingService } from '../billing/billing.service';
 
 @Injectable()
 export class UsersService {
@@ -23,7 +23,7 @@ export class UsersService {
   public async signIn({
     email,
     password,
-  }: AccessCredentialsDto): Promise<string> {
+  }: PostAccessCredentialsDto): Promise<string> {
     const user = await this.userModel.findOne({ where: { email } });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -42,7 +42,7 @@ export class UsersService {
   public async signUp({
     email,
     password,
-  }: AccessCredentialsDto): Promise<string> {
+  }: PostAccessCredentialsDto): Promise<string> {
     const { id: stripeConsumerId } = await this.billingService.createCustomer(
       email,
     );
