@@ -8,11 +8,13 @@ import { JwtModule } from '@nestjs/jwt';
 import config from 'config';
 import { JwtModuleConfig } from './auth/types';
 import { PassportModule } from '@nestjs/passport';
+import { BillingModule } from 'src/billing/billing.module';
 
 const jwtConfig = config.get<JwtModuleConfig>('jwt');
 
 @Module({
   imports: [
+    BillingModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     SequelizeModule.forFeature([User]),
     JwtModule.register({

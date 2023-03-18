@@ -12,4 +12,7 @@ module.exports = {
     secret: 'stripe_mvp_api_jwt_secret',
     expiresIn: '6h',
   },
+  stripe: {
+    secretKey: null,
+  },
 };

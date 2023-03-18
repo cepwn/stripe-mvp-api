@@ -4,10 +4,14 @@ import { AppService } from './app.service';
 import config from 'config';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { UserModule } from './users/users.module';
-import { PassportModule } from '@nestjs/passport';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
-  imports: [SequelizeModule.forRoot(config.get('postgres')), UserModule],
+  imports: [
+    SequelizeModule.forRoot(config.get('postgres')),
+    UserModule,
+    BillingModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

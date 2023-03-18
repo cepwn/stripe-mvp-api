@@ -9,13 +9,15 @@ import { User } from './user.model';
 import bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAccessPayload } from './auth/types';
+import { BillingService } from 'src/billing/billing.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User)
-    private userModel: typeof User,
-    private jwtService: JwtService,
+    private readonly userModel: typeof User,
+    private readonly jwtService: JwtService,
+    private readonly billingService: BillingService,
   ) {}
 
   public async signIn({
@@ -41,7 +43,10 @@ export class UsersService {
     email,
     password,
   }: AccessCredentialsDto): Promise<string> {
-    const user = await this.create(email, password);
+    const { id: stripeConsumerId } = await this.billingService.createCustomer(
+      email,
+    );
+    const user = await this.create(email, password, stripeConsumerId);
     const payload = {
       userId: user.id,
     } as JwtAccessPayload;
@@ -51,7 +56,7 @@ export class UsersService {
   private async create(
     email: string,
     rawPassword: string,
-    stripeCustomerId = 'testing',
+    stripeCustomerId: string,
   ): Promise<User> {
     const salt = await bcrypt.genSalt();
     const password = await bcrypt.hash(rawPassword, salt);
