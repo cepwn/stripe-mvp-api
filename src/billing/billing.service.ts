@@ -18,6 +18,21 @@ export class BillingService {
     });
   }
 
+  public patchProduct(
+    stripeProductId: string,
+    name: string,
+  ): Promise<Stripe.Product> {
+    return this.stripeClient.products.update(stripeProductId, {
+      name,
+    });
+  }
+
+  public deactivateProduct(stripeProductId: string): Promise<Stripe.Product> {
+    return this.stripeClient.products.update(stripeProductId, {
+      active: false,
+    });
+  }
+
   public postPrice(
     stripeProductId: string,
     amount: number,
@@ -31,6 +46,12 @@ export class BillingService {
       recurring: {
         interval,
       },
+    });
+  }
+
+  public deactivatePrice(stripePriceId: string): Promise<Stripe.Price> {
+    return this.stripeClient.prices.update(stripePriceId, {
+      active: false,
     });
   }
 }

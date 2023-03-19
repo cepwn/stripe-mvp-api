@@ -75,7 +75,7 @@ export class Product extends Model {
   public trial: boolean;
 
   @HasMany(() => Price)
-  price: Price[];
+  prices: Price[];
 
   @CreatedAt
   public created: Date;
