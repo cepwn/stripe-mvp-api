@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Price } from 'src/products/models/price.model';
 import { PriceInterval } from '../products/types';
@@ -39,13 +44,18 @@ export class BillingService {
     const { stripePriceId, product } = price;
     const { id: productId } = product;
 
-    const stripeSubscription = await this.stripeClient.subscriptions.create({
-      customer: stripeCustomerId,
-      items: [{ price: stripePriceId }],
-      payment_behavior: 'default_incomplete',
-      payment_settings: { save_default_payment_method: 'on_subscription' },
-      expand: ['latest_invoice.payment_intent'],
-    });
+    let stripeSubscription;
+    try {
+      stripeSubscription = await this.stripeClient.subscriptions.create({
+        customer: stripeCustomerId,
+        items: [{ price: stripePriceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: { save_default_payment_method: 'on_subscription' },
+        expand: ['latest_invoice.payment_intent'],
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(e.message);
+    }
     const latestInvoice = stripeSubscription.latest_invoice as Stripe.Invoice;
     const paymentIntent = latestInvoice.payment_intent as Stripe.PaymentIntent;
     const subscription = await this.subscriptionModel.create({
@@ -72,9 +82,14 @@ export class BillingService {
       throw new NotFoundException('Subscription not found');
     }
     const { stripeSubscriptionId } = subscription;
-    const stripeSubscription = await this.stripeClient.subscriptions.retrieve(
-      stripeSubscriptionId,
-    );
+    let stripeSubscription;
+    try {
+      stripeSubscription = await this.stripeClient.subscriptions.retrieve(
+        stripeSubscriptionId,
+      );
+    } catch (e) {
+      throw new InternalServerErrorException(e.message);
+    }
     subscription.nextBilling = fromUnixTime(
       stripeSubscription.current_period_end,
     );
@@ -82,52 +97,90 @@ export class BillingService {
     return subscription.save();
   }
 
-  public postCustomer(email: string): Promise<Stripe.Customer> {
-    return this.stripeClient.customers.create({
-      email,
-    });
+  public async postCustomer(email: string): Promise<Stripe.Customer> {
+    let response;
+    try {
+      response = await this.stripeClient.customers.create({
+        email,
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(e.message);
+    }
+    return response;
   }
 
-  public postProduct(name: string): Promise<Stripe.Product> {
-    return this.stripeClient.products.create({
-      name,
-    });
+  public async postProduct(name: string): Promise<Stripe.Product> {
+    let response;
+    try {
+      response = await this.stripeClient.products.create({
+        name,
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(e.message);
+    }
+    return response;
   }
 
-  public patchProduct(
+  public async patchProduct(
     stripeProductId: string,
     name: string,
   ): Promise<Stripe.Product> {
-    return this.stripeClient.products.update(stripeProductId, {
-      name,
-    });
+    let response;
+    try {
+      response = await this.stripeClient.products.update(stripeProductId, {
+        name,
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(e.message);
+    }
+    return response;
   }
 
-  public deactivateProduct(stripeProductId: string): Promise<Stripe.Product> {
-    return this.stripeClient.products.update(stripeProductId, {
-      active: false,
-    });
+  public async deactivateProduct(
+    stripeProductId: string,
+  ): Promise<Stripe.Product> {
+    let response;
+    try {
+      response = await this.stripeClient.products.update(stripeProductId, {
+        active: false,
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(e.message);
+    }
+    return response;
   }
 
-  public postPrice(
+  public async postPrice(
     stripeProductId: string,
     amount: number,
     interval: PriceInterval,
   ): Promise<Stripe.Price> {
-    return this.stripeClient.prices.create({
-      billing_scheme: 'per_unit',
-      product: stripeProductId,
-      unit_amount: amount,
-      currency: 'usd',
-      recurring: {
-        interval,
-      },
-    });
+    let response;
+    try {
+      response = await this.stripeClient.prices.create({
+        billing_scheme: 'per_unit',
+        product: stripeProductId,
+        unit_amount: amount,
+        currency: 'usd',
+        recurring: {
+          interval,
+        },
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(e.message);
+    }
+    return response;
   }
 
-  public deactivatePrice(stripePriceId: string): Promise<Stripe.Price> {
-    return this.stripeClient.prices.update(stripePriceId, {
-      active: false,
-    });
+  public async deactivatePrice(stripePriceId: string): Promise<Stripe.Price> {
+    let response;
+    try {
+      response = await this.stripeClient.prices.update(stripePriceId, {
+        active: false,
+      });
+    } catch (e) {
+      throw new InternalServerErrorException(e.message);
+    }
+    return response;
   }
 }

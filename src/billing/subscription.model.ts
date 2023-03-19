@@ -57,6 +57,24 @@ export class Subscription extends Model {
   })
   public active: boolean;
 
+  @ApiProperty({ nullable: true })
+  @Column({
+    allowNull: true,
+    validate: {
+      notEmpty: true,
+    },
+  })
+  public cardName: string;
+
+  @ApiProperty({ nullable: true })
+  @Column({
+    allowNull: true,
+    validate: {
+      notEmpty: true,
+    },
+  })
+  public cardLast4: string;
+
   @ApiProperty()
   @ForeignKey(() => Product)
   @Column({

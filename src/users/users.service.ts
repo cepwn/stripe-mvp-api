@@ -1,6 +1,6 @@
 import {
+  ConflictException,
   Injectable,
-  OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
@@ -43,10 +43,14 @@ export class UsersService {
     email,
     password,
   }: PostAccessCredentialsDto): Promise<string> {
+    let user = await this.userModel.findOne({ where: { email } });
+    if (user) {
+      throw new ConflictException('User already exists');
+    }
     const { id: stripeConsumerId } = await this.billingService.postCustomer(
       email,
     );
-    const user = await this.create(email, password, stripeConsumerId);
+    user = await this.create(email, password, stripeConsumerId);
     const payload = {
       userId: user.id,
     } as JwtAccessPayload;

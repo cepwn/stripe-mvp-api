@@ -18,7 +18,7 @@ module.exports = {
 
 1. Follow steps to run [`cepwn/stripe-mvp-local-cluster`](https://github.com/cepwn/stripe-mvp-local-cluster)
 
-2. Create `config/local.yaml` and add stripe secret key value
+2. Create `config/local.js` and add stripe secret key value.
 
 3. Install dependencies:
 
@@ -27,8 +27,6 @@ module.exports = {
    ```
 
 4. Start the development server:
-
-   a. To start api process:
 
    ```bash
    npm start

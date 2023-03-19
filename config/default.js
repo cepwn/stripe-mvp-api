@@ -3,9 +3,9 @@ module.exports = {
     dialect: 'postgres',
     host: 'localhost',
     port: 5432,
-    username: 'stripe_mvp_api_user',
-    password: 'stripe_mvp_api_pass',
-    database: 'stripe_mvp_api',
+    username: 'postgres',
+    password: 'postgres',
+    database: 'postgres',
     autoLoadModels: true,
   },
   jwt: {

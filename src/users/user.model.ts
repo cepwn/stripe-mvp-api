@@ -40,6 +40,7 @@ export class User extends Model {
     validate: {
       isEmail: true,
     },
+    unique: true,
   })
   public email: string;
 

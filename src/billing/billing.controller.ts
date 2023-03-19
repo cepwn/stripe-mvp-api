@@ -1,9 +1,17 @@
-import { Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Controller,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { PostSubscriptionResponseDto } from './billing.dto';
 import { BillingService } from './billing.service';
 import { Subscription } from './subscription.model';
 
+@ApiBearerAuth()
 @ApiTags('billing')
 @Controller('billing')
 export class BillingController {
@@ -15,6 +23,7 @@ export class BillingController {
     type: PostSubscriptionResponseDto,
   })
   @Post('prices/:priceId/users/:userId/subscribe')
+  @UseGuards(AuthGuard())
   public async postSubscription(
     @Param('priceId', ParseUUIDPipe) priceId: string,
     @Param('userId', ParseUUIDPipe) userId: string,
@@ -28,6 +37,7 @@ export class BillingController {
   })
   // FIXME: Remove this endpoint, only used for temporary flow without webhooks
   @Post('subscriptions/:subscriptionId')
+  @UseGuards(AuthGuard())
   public async refreshSubscription(
     @Param('subscriptionId', ParseUUIDPipe) subscriptionId: string,
   ): Promise<Subscription> {

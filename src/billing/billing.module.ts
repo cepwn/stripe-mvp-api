@@ -7,9 +7,13 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from 'src/users/user.model';
 import { Price } from 'src/products/models/price.model';
 import { Subscription } from './subscription.model';
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
-  imports: [SequelizeModule.forFeature([User, Price, Subscription])],
+  imports: [
+    SequelizeModule.forFeature([User, Price, Subscription]),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+  ],
   providers: [
     BillingService,
     {
