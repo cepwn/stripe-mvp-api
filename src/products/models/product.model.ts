@@ -9,6 +9,7 @@ import {
 } from 'sequelize-typescript';
 import { UUID, UUIDV4 } from 'sequelize';
 import { Price } from './price.model';
+import { Subscription } from '../../billing/subscription.model';
 
 @Table({ tableName: 'products' })
 export class Product extends Model {
@@ -65,17 +66,11 @@ export class Product extends Model {
   })
   public mostPopular: boolean;
 
-  @Column({
-    allowNull: false,
-    defaultValue: false,
-    validate: {
-      isBoolean: true,
-    },
-  })
-  public trial: boolean;
-
   @HasMany(() => Price)
   prices: Price[];
+
+  @HasMany(() => Subscription)
+  subscriptions: Subscription[];
 
   @CreatedAt
   public created: Date;

@@ -38,10 +38,6 @@ export class PatchProductDto {
   @IsOptional()
   @IsBoolean()
   public mostPopular?: boolean;
-
-  @IsOptional()
-  @IsBoolean()
-  public trial?: boolean;
 }
 
 export class PostPriceDto {

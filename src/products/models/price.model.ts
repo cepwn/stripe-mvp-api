@@ -4,6 +4,7 @@ import {
   CreatedAt,
   DeletedAt,
   ForeignKey,
+  HasMany,
   Model,
   Table,
   UpdatedAt,
@@ -11,6 +12,7 @@ import {
 import { INTEGER, ENUM, UUID, UUIDV4 } from 'sequelize';
 import { PriceInterval } from '../types';
 import { Product } from './product.model';
+import { Subscription } from '../../billing/subscription.model';
 
 @Table({ tableName: 'prices' })
 export class Price extends Model {
@@ -63,6 +65,9 @@ export class Price extends Model {
 
   @BelongsTo(() => Product)
   product: Product;
+
+  @HasMany(() => Subscription)
+  subscriptions: Subscription[];
 
   @CreatedAt
   public created: Date;

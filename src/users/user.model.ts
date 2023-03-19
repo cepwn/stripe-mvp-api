@@ -2,11 +2,13 @@ import {
   Column,
   CreatedAt,
   DeletedAt,
+  HasOne,
   Model,
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
 import { UUID, UUIDV4 } from 'sequelize';
+import { Subscription } from '../billing/subscription.model';
 
 @Table({ tableName: 'users' })
 export class User extends Model {
@@ -44,6 +46,9 @@ export class User extends Model {
     },
   })
   public password: string;
+
+  @HasOne(() => Subscription)
+  subscription: Subscription[];
 
   @CreatedAt
   public created: Date;

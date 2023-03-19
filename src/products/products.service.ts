@@ -47,14 +47,13 @@ export class ProductsService {
 
   public async patchProduct(
     productId,
-    { name, features, active, mostPopular, trial }: PatchProductDto,
+    { name, features, active, mostPopular }: PatchProductDto,
   ): Promise<Product> {
     if (
       name === undefined &&
       features === undefined &&
       active === undefined &&
-      mostPopular === undefined &&
-      trial === undefined
+      mostPopular === undefined
     ) {
       throw new BadRequestException('No fields to update');
     }
@@ -75,9 +74,6 @@ export class ProductsService {
     }
     if (mostPopular !== undefined) {
       product.mostPopular = mostPopular;
-    }
-    if (trial !== undefined) {
-      product.trial = trial;
     }
     return product.save();
   }
