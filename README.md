@@ -37,3 +37,6 @@ module.exports = {
    ```bash
    open http://localhost:3000/api
    ```
+## Entity Relationships
+
+<img width="436" alt="image" src="https://user-images.githubusercontent.com/20140770/226176895-4a5baf81-6a97-44a0-8c1d-cea1344777c7.png">
