@@ -1,4 +1,12 @@
-import { IsBoolean, IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+} from 'class-validator';
+import { PriceInterval } from './types';
 
 export class PostProductDto {
   @IsString()
@@ -8,13 +16,13 @@ export class PostProductDto {
   @IsString()
   @IsNotEmpty()
   public features: string;
+}
 
-  @IsBoolean()
-  public active: boolean;
+export class PostPriceDto {
+  @IsNumber()
+  @IsInt()
+  public amount: number;
 
-  @IsBoolean()
-  public mostPopular: boolean;
-
-  @IsBoolean()
-  public trial: boolean;
+  @IsEnum(PriceInterval)
+  public interval: PriceInterval;
 }

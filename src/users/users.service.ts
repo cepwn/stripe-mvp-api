@@ -43,7 +43,7 @@ export class UsersService {
     email,
     password,
   }: PostAccessCredentialsDto): Promise<string> {
-    const { id: stripeConsumerId } = await this.billingService.createCustomer(
+    const { id: stripeConsumerId } = await this.billingService.postCustomer(
       email,
     );
     const user = await this.create(email, password, stripeConsumerId);

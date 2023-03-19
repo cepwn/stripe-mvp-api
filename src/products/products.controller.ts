@@ -1,6 +1,6 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { PostProductDto } from './product.dto';
-import { Product } from './product.model';
+import { Body, Controller, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { PostPriceDto, PostProductDto } from './product.dto';
+import { Product } from './models/product.model';
 import { ProductsService } from './products.service';
 
 @Controller('products')
@@ -10,5 +10,13 @@ export class ProductsController {
   @Post()
   public async postProduct(@Body() body: PostProductDto): Promise<Product> {
     return this.productsService.postProduct(body);
+  }
+
+  @Post(':productId/prices')
+  public async postPrice(
+    @Param('productId', ParseUUIDPipe) productId: string,
+    @Body() body: PostPriceDto,
+  ): Promise<Product> {
+    return this.productsService.postPrice(productId, body);
   }
 }

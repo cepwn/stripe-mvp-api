@@ -15,16 +15,34 @@ export class User extends Model {
     defaultValue: UUIDV4,
     allowNull: false,
     primaryKey: true,
+    validate: {
+      isUUID: 4,
+    },
   })
   public id: string;
 
-  @Column
+  @Column({
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+    },
+  })
   public stripeCustomerId: string;
 
-  @Column
+  @Column({
+    allowNull: false,
+    validate: {
+      isEmail: true,
+    },
+  })
   public email: string;
 
-  @Column
+  @Column({
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+    },
+  })
   public password: string;
 
   @CreatedAt
