@@ -57,7 +57,9 @@ export class ProductsService {
     ) {
       throw new BadRequestException('No fields to update');
     }
-    const product = await this.productModel.findByPk(productId);
+    const product = await this.productModel.findByPk(productId, {
+      include: [Price],
+    });
     if (!product) {
       throw new NotFoundException('Product not found');
     }
@@ -79,7 +81,9 @@ export class ProductsService {
   }
 
   public async deleteProduct(productId: string): Promise<Product> {
-    const product = await this.productModel.findByPk(productId);
+    const product = await this.productModel.findByPk(productId, {
+      include: [Price],
+    });
     if (!product) {
       throw new NotFoundException('Product not found');
     }

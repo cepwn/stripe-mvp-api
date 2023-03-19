@@ -10,9 +10,11 @@ import {
 import { UUID, UUIDV4 } from 'sequelize';
 import { Price } from './price.model';
 import { Subscription } from '../../billing/subscription.model';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Table({ tableName: 'products' })
 export class Product extends Model {
+  @ApiProperty()
   @Column({
     type: UUID,
     defaultValue: UUIDV4,
@@ -24,6 +26,7 @@ export class Product extends Model {
   })
   public id: string;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     validate: {
@@ -32,6 +35,7 @@ export class Product extends Model {
   })
   public stripeProductId: string;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     validate: {
@@ -40,6 +44,7 @@ export class Product extends Model {
   })
   public name: string;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     validate: {
@@ -48,6 +53,7 @@ export class Product extends Model {
   })
   public features: string;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     defaultValue: false,
@@ -57,6 +63,7 @@ export class Product extends Model {
   })
   public active: boolean;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     defaultValue: false,
@@ -66,18 +73,26 @@ export class Product extends Model {
   })
   public mostPopular: boolean;
 
+  @ApiProperty({
+    type: () => [Price],
+  })
   @HasMany(() => Price)
   prices: Price[];
 
   @HasMany(() => Subscription)
   subscriptions: Subscription[];
 
+  @ApiProperty()
   @CreatedAt
   public created: Date;
 
+  @ApiProperty()
   @UpdatedAt
   public updated: Date;
 
+  @ApiProperty({
+    nullable: true,
+  })
   @DeletedAt
   public deleted: Date;
 }

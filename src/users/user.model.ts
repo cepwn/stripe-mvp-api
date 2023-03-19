@@ -9,9 +9,11 @@ import {
 } from 'sequelize-typescript';
 import { UUID, UUIDV4 } from 'sequelize';
 import { Subscription } from '../billing/subscription.model';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Table({ tableName: 'users' })
 export class User extends Model {
+  @ApiProperty()
   @Column({
     type: UUID,
     defaultValue: UUIDV4,
@@ -23,6 +25,7 @@ export class User extends Model {
   })
   public id: string;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     validate: {
@@ -31,6 +34,7 @@ export class User extends Model {
   })
   public stripeCustomerId: string;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     validate: {
@@ -39,6 +43,7 @@ export class User extends Model {
   })
   public email: string;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     validate: {
@@ -50,12 +55,17 @@ export class User extends Model {
   @HasOne(() => Subscription)
   subscription: Subscription[];
 
+  @ApiProperty()
   @CreatedAt
   public created: Date;
 
+  @ApiProperty()
   @UpdatedAt
   public updated: Date;
 
+  @ApiProperty({
+    nullable: true,
+  })
   @DeletedAt
   public deleted: Date;
 }

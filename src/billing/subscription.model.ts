@@ -12,9 +12,11 @@ import { UUID, UUIDV4 } from 'sequelize';
 import { User } from '../users/user.model';
 import { Price } from '../products/models/price.model';
 import { Product } from '../products/models/product.model';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Table({ tableName: 'subscriptions' })
 export class Subscription extends Model {
+  @ApiProperty()
   @Column({
     type: UUID,
     defaultValue: UUIDV4,
@@ -26,6 +28,7 @@ export class Subscription extends Model {
   })
   public id: string;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     validate: {
@@ -34,6 +37,7 @@ export class Subscription extends Model {
   })
   public stripeSubscriptionId: string;
 
+  @ApiProperty()
   @Column({
     type: 'TIMESTAMP',
     allowNull: false,
@@ -43,6 +47,7 @@ export class Subscription extends Model {
   })
   public nextBilling: Date;
 
+  @ApiProperty()
   @Column({
     allowNull: false,
     defaultValue: false,
@@ -52,6 +57,7 @@ export class Subscription extends Model {
   })
   public active: boolean;
 
+  @ApiProperty()
   @ForeignKey(() => Product)
   @Column({
     allowNull: false,
@@ -65,6 +71,7 @@ export class Subscription extends Model {
   @BelongsTo(() => Product)
   product: Product;
 
+  @ApiProperty()
   @ForeignKey(() => Price)
   @Column({
     allowNull: false,
@@ -78,6 +85,7 @@ export class Subscription extends Model {
   @BelongsTo(() => Price)
   price: Price;
 
+  @ApiProperty()
   @ForeignKey(() => User)
   @Column({
     allowNull: false,
@@ -91,12 +99,17 @@ export class Subscription extends Model {
   @BelongsTo(() => User)
   user: User;
 
+  @ApiProperty()
   @CreatedAt
   public created: Date;
 
+  @ApiProperty()
   @UpdatedAt
   public updated: Date;
 
+  @ApiProperty({
+    nullable: true,
+  })
   @DeletedAt
   public deleted: Date;
 }
