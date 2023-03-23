@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { PostAccessCredentialsDto } from './user.dto';
+import { AccessReponseDto, PostAccessCredentialsDto } from './user.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
@@ -13,7 +13,9 @@ export class UsersController {
     type: String,
   })
   @Post('sign-in')
-  public signIn(@Body() body: PostAccessCredentialsDto): Promise<string> {
+  public signIn(
+    @Body() body: PostAccessCredentialsDto,
+  ): Promise<AccessReponseDto> {
     return this.userService.signIn(body);
   }
 
@@ -22,7 +24,9 @@ export class UsersController {
     type: String,
   })
   @Post('sign-up')
-  public signUp(@Body() body: PostAccessCredentialsDto): Promise<string> {
+  public signUp(
+    @Body() body: PostAccessCredentialsDto,
+  ): Promise<AccessReponseDto> {
     return this.userService.signUp(body);
   }
 }

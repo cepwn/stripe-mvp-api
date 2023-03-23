@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsEmail,
+  IsJWT,
   IsString,
   Matches,
   MaxLength,
@@ -20,4 +21,10 @@ export class PostAccessCredentialsDto {
     message: 'password too weak',
   })
   public password: string;
+}
+
+export class AccessReponseDto {
+  @ApiProperty()
+  @IsJWT()
+  public jwt: string;
 }

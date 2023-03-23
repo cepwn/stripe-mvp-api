@@ -10,7 +10,7 @@ module.exports = {
   },
   jwt: {
     secret: 'stripe_mvp_api_jwt_secret',
-    expiresIn: '6h',
+    expiresIn: '1h',
   },
   stripe: {
     secretKey: null,

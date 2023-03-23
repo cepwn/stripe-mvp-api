@@ -4,12 +4,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { PostAccessCredentialsDto } from './user.dto';
+import { AccessReponseDto, PostAccessCredentialsDto } from './user.dto';
 import { User } from './user.model';
 import bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { JwtAccessPayload } from './auth/types';
 import { BillingService } from '../billing/billing.service';
+import { validate } from 'class-validator';
 
 @Injectable()
 export class UsersService {
@@ -23,7 +24,7 @@ export class UsersService {
   public async signIn({
     email,
     password,
-  }: PostAccessCredentialsDto): Promise<string> {
+  }: PostAccessCredentialsDto): Promise<AccessReponseDto> {
     const user = await this.userModel.findOne({ where: { email } });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -36,13 +37,15 @@ export class UsersService {
     const payload = {
       userId: user.id,
     } as JwtAccessPayload;
-    return this.jwtService.sign(payload);
+    const response = { jwt: this.jwtService.sign(payload) };
+    await validate(response);
+    return response;
   }
 
   public async signUp({
     email,
     password,
-  }: PostAccessCredentialsDto): Promise<string> {
+  }: PostAccessCredentialsDto): Promise<AccessReponseDto> {
     let user = await this.userModel.findOne({ where: { email } });
     if (user) {
       throw new ConflictException('User already exists');
@@ -54,7 +57,9 @@ export class UsersService {
     const payload = {
       userId: user.id,
     } as JwtAccessPayload;
-    return this.jwtService.sign(payload);
+    const response = { jwt: this.jwtService.sign(payload) };
+    await validate(response);
+    return response;
   }
 
   private async create(
