@@ -12,7 +12,6 @@ import Stripe from 'stripe';
 import { Subscription } from './subscription.model';
 import { fromUnixTime } from 'date-fns';
 import { PostSubscriptionResponseDto } from './billing.dto';
-import { validate } from 'class-validator';
 
 @Injectable()
 export class BillingService {
@@ -69,8 +68,8 @@ export class BillingService {
       clientSecret: paymentIntent.client_secret,
       subscriptionId: subscription.id,
     };
-    await validate(response);
-    return response;
+
+    return new PostSubscriptionResponseDto(response);
   }
 
   // FIXME: Remove this method, only used for temporary flow without webhooks

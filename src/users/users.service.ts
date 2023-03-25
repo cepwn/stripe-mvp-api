@@ -8,9 +8,7 @@ import { AccessReponseDto, PostAccessCredentialsDto } from './user.dto';
 import { User } from './user.model';
 import bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { JwtAccessPayload } from './auth/types';
 import { BillingService } from '../billing/billing.service';
-import { validate } from 'class-validator';
 
 @Injectable()
 export class UsersService {
@@ -36,10 +34,9 @@ export class UsersService {
     }
     const payload = {
       userId: user.id,
-    } as JwtAccessPayload;
+    };
     const response = { jwt: this.jwtService.sign(payload) };
-    await validate(response);
-    return response;
+    return new AccessReponseDto(response);
   }
 
   public async signUp({
@@ -56,10 +53,9 @@ export class UsersService {
     user = await this.create(email, password, stripeConsumerId);
     const payload = {
       userId: user.id,
-    } as JwtAccessPayload;
+    };
     const response = { jwt: this.jwtService.sign(payload) };
-    await validate(response);
-    return response;
+    return new AccessReponseDto(response);
   }
 
   private async create(

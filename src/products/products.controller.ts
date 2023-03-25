@@ -9,12 +9,17 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { PatchProductDto, PostPriceDto, PostProductDto } from './product.dto';
 import { Product } from './models/product.model';
 import { ProductsService } from './products.service';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import {
+  PatchProductDto,
+  PostProductDto,
+  ProductResponseDto,
+} from './product.dto';
 
+// NOTE: This controller is not used in the app, but is here for completeness
 @ApiBearerAuth()
 @ApiTags('products')
 @Controller('products')
@@ -22,27 +27,29 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @ApiOkResponse({
-    description: 'Fetch all products',
-    type: [Product],
+    description: 'Fetch all products with prices',
+    type: [ProductResponseDto],
   })
   @Get()
   @UseGuards(AuthGuard())
-  public async getProducts(): Promise<Product[]> {
+  public async getProducts(): Promise<ProductResponseDto[]> {
     return this.productsService.getProducts();
   }
 
   @ApiOkResponse({
-    description: 'Fetch all active products',
-    type: [Product],
+    description: 'Fetch product by id with prices',
+    type: [ProductResponseDto],
   })
-  @Get('active')
+  @Get(':productId')
   @UseGuards(AuthGuard())
-  public async getActiveProducts(): Promise<Product[]> {
-    return this.productsService.getActiveProducts();
+  public async getProduct(
+    @Param('productId', ParseUUIDPipe) productId: string,
+  ): Promise<ProductResponseDto> {
+    return this.productsService.getProduct(productId);
   }
 
   @ApiOkResponse({
-    description: 'Create product locally and in stripe',
+    description: 'Create product with prices locally and in stripe',
     type: Product,
   })
   @Post()
@@ -52,7 +59,7 @@ export class ProductsController {
   }
 
   @ApiOkResponse({
-    description: 'Modify product details (only name modified in stripe)',
+    description: 'Modify product and price details',
     type: Product,
   })
   @Patch(':productId')
@@ -60,45 +67,20 @@ export class ProductsController {
   public async patchProduct(
     @Param('productId', ParseUUIDPipe) productId: string,
     @Body() body: PatchProductDto,
-  ): Promise<Product> {
+  ): Promise<ProductResponseDto> {
     return this.productsService.patchProduct(productId, body);
   }
 
   @ApiOkResponse({
-    description: 'Soft delete product and deactive in stripe',
+    description:
+      'Soft delete product with prices and deactive both entities in stripe',
     type: Product,
   })
   @Delete(':productId')
   @UseGuards(AuthGuard())
   public async deleteProduct(
     @Param('productId', ParseUUIDPipe) productId: string,
-  ): Promise<Product> {
+  ): Promise<ProductResponseDto> {
     return this.productsService.deleteProduct(productId);
-  }
-
-  @ApiOkResponse({
-    description: 'Post price and attach to product (locally and in stripe)',
-    type: Product,
-  })
-  @Post(':productId/prices')
-  @UseGuards(AuthGuard())
-  public async postPrice(
-    @Param('productId', ParseUUIDPipe) productId: string,
-    @Body() body: PostPriceDto,
-  ): Promise<Product> {
-    return this.productsService.postPrice(productId, body);
-  }
-
-  @ApiOkResponse({
-    description: 'Soft delete price and deactive in stripe',
-    type: Product,
-  })
-  @Delete(':productId/prices/:priceId')
-  @UseGuards(AuthGuard())
-  public async deletePrice(
-    @Param('productId', ParseUUIDPipe) productId: string,
-    @Param('priceId', ParseUUIDPipe) priceId: string,
-  ): Promise<Product> {
-    return this.productsService.deletePrice(productId, priceId);
   }
 }

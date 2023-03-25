@@ -7,6 +7,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { ValidatorReady } from 'src/util/validation';
 
 export class PostAccessCredentialsDto {
   @ApiProperty()
@@ -23,7 +24,7 @@ export class PostAccessCredentialsDto {
   public password: string;
 }
 
-export class AccessReponseDto {
+export class AccessReponseDto extends ValidatorReady {
   @ApiProperty()
   @IsJWT()
   public jwt: string;

@@ -1,14 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
-  IsEnum,
-  IsInt,
+  IsCurrency,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
-import { PriceInterval } from './types';
+import { ValidatorReady } from 'src/util/validation';
 
 export class PostProductDto {
   @ApiProperty()
@@ -20,6 +19,22 @@ export class PostProductDto {
   @IsString()
   @IsNotEmpty()
   public features: string;
+
+  @ApiProperty()
+  @IsCurrency()
+  public monthlyPriceAmount: string;
+
+  @ApiProperty()
+  @IsCurrency()
+  public yearlyPriceAmount: string;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  public active: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  public mostPopular: boolean;
 }
 
 export class PatchProductDto {
@@ -35,6 +50,16 @@ export class PatchProductDto {
   @IsNotEmpty()
   public features?: string;
 
+  @ApiProperty()
+  @IsOptional()
+  @IsCurrency()
+  public monthlyPriceAmount?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  @IsCurrency()
+  public yearlyPriceAmount?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
@@ -46,13 +71,34 @@ export class PatchProductDto {
   public mostPopular?: boolean;
 }
 
-export class PostPriceDto {
+export class ProductResponseDto extends ValidatorReady {
   @ApiProperty()
-  @IsNumber()
-  @IsInt()
-  public amount: number;
+  @IsUUID(4)
+  public id: string;
 
   @ApiProperty()
-  @IsEnum(PriceInterval)
-  public interval: PriceInterval;
+  @IsString()
+  @IsNotEmpty()
+  public name: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  public features: string;
+
+  @ApiProperty()
+  @IsCurrency()
+  public monthlyPriceAmount: string;
+
+  @ApiProperty()
+  @IsCurrency()
+  public yearlyPriceAmount: string;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  public active: boolean;
+
+  @ApiPropertyOptional()
+  @IsBoolean()
+  public mostPopular: boolean;
 }

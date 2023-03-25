@@ -1,137 +1,277 @@
 import {
   BadRequestException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { BillingService } from '../billing/billing.service';
-import { PatchProductDto, PostPriceDto, PostProductDto } from './product.dto';
+import {
+  PatchProductDto,
+  PostProductDto,
+  ProductResponseDto,
+} from './product.dto';
 import { Product } from './models/product.model';
 import { Price } from './models/price.model';
+import { PriceInterval } from './types';
+import { Sequelize } from 'sequelize-typescript';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product)
     private readonly productModel: typeof Product,
-    @InjectModel(Price)
-    private readonly priceModel: typeof Price,
     private readonly billingService: BillingService,
+    private readonly sequelize: Sequelize,
   ) {}
 
-  public async getProducts(): Promise<Product[]> {
-    return this.productModel.findAll({
-      include: [Price],
+  private tranformProductToDto(product: Product): ProductResponseDto {
+    const { id, name, active, features, mostPopular } = product;
+
+    const monthlyPrice = product.prices.find(
+      (price) => price.interval === PriceInterval.Month,
+    );
+
+    let monthlyPriceAmount = null;
+    if (monthlyPrice) {
+      monthlyPriceAmount = `${(monthlyPrice.amount / 100).toFixed(2)}`;
+    }
+
+    const yearlyPrice = product.prices.find(
+      (price) => price.interval === PriceInterval.Year,
+    );
+
+    let yearlyPriceAmount = null;
+
+    if (yearlyPrice) {
+      yearlyPriceAmount = `${(yearlyPrice.amount / 100).toFixed(2)}`;
+    }
+
+    return new ProductResponseDto({
+      id,
+      name,
+      features,
+      monthlyPriceAmount,
+      yearlyPriceAmount,
+      active,
+      mostPopular,
     });
   }
 
-  public async getActiveProducts(): Promise<Product[]> {
-    return this.productModel.findAll({
-      where: { active: true },
+  public async getProduct(productId: string): Promise<ProductResponseDto> {
+    const product = await this.productModel.findByPk(productId, {
       include: [Price],
     });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return this.tranformProductToDto(product);
+  }
+
+  public async getProducts(): Promise<ProductResponseDto[]> {
+    const products = await this.productModel.findAll({
+      include: [Price],
+    });
+
+    const response = [] as ProductResponseDto[];
+
+    for (const product of products) {
+      response.push(this.tranformProductToDto(product));
+    }
+
+    response.sort(
+      (a, b) => Number(a.monthlyPriceAmount) - Number(b.monthlyPriceAmount),
+    );
+
+    return response;
   }
 
   public async postProduct({
     name,
     features,
+    monthlyPriceAmount,
+    yearlyPriceAmount,
+    active,
+    mostPopular,
   }: PostProductDto): Promise<Product> {
+    const monthlyPriceInt = Number(monthlyPriceAmount.replace('.', ''));
+    const yearlyPriceInt = Number(yearlyPriceAmount.replace('.', ''));
+
+    // TODO: Add transaction / better error handling against stripe
     const { id: stripeProductId } = await this.billingService.postProduct(name);
-    return this.productModel.create({
-      name,
+    const { id: monthlyPriceId } = await this.billingService.postPrice(
       stripeProductId,
-      features,
-    });
+      monthlyPriceInt,
+      PriceInterval.Month,
+    );
+    const { id: yearlyPriceId } = await this.billingService.postPrice(
+      stripeProductId,
+      yearlyPriceInt,
+      PriceInterval.Year,
+    );
+
+    return this.productModel.create(
+      {
+        name,
+        stripeProductId,
+        features,
+        active,
+        mostPopular,
+        prices: [
+          {
+            stripeProductId,
+            amount: monthlyPriceInt,
+            interval: PriceInterval.Month,
+            stripePriceId: monthlyPriceId,
+          },
+          {
+            stripeProductId,
+            amount: yearlyPriceInt,
+            interval: PriceInterval.Year,
+            stripePriceId: yearlyPriceId,
+          },
+        ],
+      },
+      {
+        include: [Price],
+      },
+    );
   }
 
   public async patchProduct(
     productId,
-    { name, features, active, mostPopular }: PatchProductDto,
-  ): Promise<Product> {
+    {
+      name,
+      features,
+      monthlyPriceAmount,
+      yearlyPriceAmount,
+      active,
+      mostPopular,
+    }: PatchProductDto,
+  ): Promise<ProductResponseDto> {
     if (
       name === undefined &&
       features === undefined &&
+      monthlyPriceAmount === undefined &&
+      yearlyPriceAmount === undefined &&
       active === undefined &&
       mostPopular === undefined
     ) {
       throw new BadRequestException('No fields to update');
     }
+
+    const product = await this.productModel.findByPk(productId, {
+      include: [Price],
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    await this.sequelize.transaction(async (t) => {
+      if (name !== undefined && name !== product.name) {
+        const { stripeProductId } = product;
+        product.name = name;
+        await this.billingService.patchProduct(stripeProductId, name);
+      }
+
+      if (features !== undefined && features !== product.features) {
+        product.features = features;
+      }
+
+      const currentMonthlyPrice = product.prices.find(
+        (price) => price.interval === PriceInterval.Month,
+      );
+
+      // TODO: switch existing customer subscriptions to new price
+      if (monthlyPriceAmount !== undefined) {
+        const monthlyPriceInt = Number(monthlyPriceAmount.replace('.', ''));
+        if (currentMonthlyPrice.amount !== monthlyPriceInt) {
+          const { stripePriceId } = currentMonthlyPrice;
+          await this.billingService.deactivatePrice(stripePriceId);
+          const newPrice = await this.billingService.postPrice(
+            product.stripeProductId,
+            monthlyPriceInt,
+            PriceInterval.Month,
+          );
+          await currentMonthlyPrice.destroy({ transaction: t });
+          await Price.create(
+            {
+              productId: product.id,
+              stripeProductId: product.stripeProductId,
+              amount: monthlyPriceInt,
+              interval: PriceInterval.Month,
+              stripePriceId: newPrice.id,
+            },
+            { transaction: t },
+          );
+        }
+      }
+
+      const currentYearlyPrice = product.prices.find(
+        (price) => price.interval === PriceInterval.Year,
+      );
+
+      // TODO: switch existing customer subscriptions to new price
+      if (yearlyPriceAmount !== undefined) {
+        const yearlyPriceInt = Number(yearlyPriceAmount.replace('.', ''));
+        if (currentYearlyPrice.amount !== yearlyPriceInt) {
+          const { stripePriceId } = currentYearlyPrice;
+          await this.billingService.deactivatePrice(stripePriceId);
+          const newPrice = await this.billingService.postPrice(
+            product.stripeProductId,
+            yearlyPriceInt,
+            PriceInterval.Year,
+          );
+          await currentYearlyPrice.destroy({ transaction: t });
+          await Price.create(
+            {
+              productId: product.id,
+              stripeProductId: product.stripeProductId,
+              amount: yearlyPriceInt,
+              interval: PriceInterval.Year,
+              stripePriceId: newPrice.id,
+            },
+            { transaction: t },
+          );
+        }
+      }
+
+      if (active !== undefined && active !== product.active) {
+        product.active = active;
+      }
+      if (mostPopular !== undefined && mostPopular !== product.mostPopular) {
+        product.mostPopular = mostPopular;
+      }
+
+      await product.save({ transaction: t });
+    });
+
+    return this.getProduct(productId);
+  }
+
+  public async deleteProduct(productId: string): Promise<ProductResponseDto> {
     const product = await this.productModel.findByPk(productId, {
       include: [Price],
     });
     if (!product) {
       throw new NotFoundException('Product not found');
     }
-    if (name !== undefined) {
+
+    await this.sequelize.transaction(async (t) => {
       const { stripeProductId } = product;
-      product.name = name;
-      await this.billingService.patchProduct(stripeProductId, name);
-    }
-    if (features !== undefined) {
-      product.features = features;
-    }
-    if (active !== undefined) {
-      product.active = active;
-    }
-    if (mostPopular !== undefined) {
-      product.mostPopular = mostPopular;
-    }
-    return product.save();
-  }
+      await this.billingService.deactivateProduct(stripeProductId);
 
-  public async deleteProduct(productId: string): Promise<Product> {
-    const product = await this.productModel.findByPk(productId, {
-      include: [Price],
-    });
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-    const { stripeProductId } = product;
-    await this.billingService.deactivateProduct(stripeProductId);
-    await product.destroy();
-    return product;
-  }
+      for (const price of product.prices) {
+        await this.billingService.deactivatePrice(price.stripePriceId);
+      }
 
-  public async postPrice(
-    productId: string,
-    { amount, interval }: PostPriceDto,
-  ): Promise<Product> {
-    const product = await this.productModel.findByPk(productId);
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-    const { stripeProductId } = product;
-    const { id: stripePriceId } = await this.billingService.postPrice(
-      stripeProductId,
-      amount,
-      interval,
-    );
-    await this.priceModel.create({
-      stripeProductId,
-      amount,
-      interval,
-      stripePriceId,
-      productId,
-    });
-    return this.productModel.findByPk(productId, {
-      include: [Price],
-    });
-  }
+      await product.prices.map((price) => price.destroy({ transaction: t }));
 
-  public async deletePrice(
-    productId: string,
-    priceId: string,
-  ): Promise<Product> {
-    const price = await this.priceModel.findOne({
-      where: { id: priceId, productId },
+      await product.destroy({ transaction: t });
     });
-    if (!price) {
-      throw new NotFoundException('Price not found');
-    }
-    const { stripePriceId } = price;
-    await this.billingService.deactivatePrice(stripePriceId);
-    await price.destroy();
-    return this.productModel.findByPk(productId, { include: [Price] });
+
+    return this.tranformProductToDto(product);
   }
 }
