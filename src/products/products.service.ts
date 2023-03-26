@@ -105,7 +105,6 @@ export class ProductsService {
     const monthlyPriceInt = Number(monthlyPriceAmount.replace('.', ''));
     const yearlyPriceInt = Number(yearlyPriceAmount.replace('.', ''));
 
-    // TODO: Add transaction / better error handling against stripe
     const { id: stripeProductId } = await this.billingService.postProduct(name);
     const { id: monthlyPriceId } = await this.billingService.postPrice(
       stripeProductId,
@@ -191,7 +190,6 @@ export class ProductsService {
         (price) => price.interval === PriceInterval.Month,
       );
 
-      // TODO: switch existing customer subscriptions to new price
       if (monthlyPriceAmount !== undefined) {
         const monthlyPriceInt = Number(monthlyPriceAmount.replace('.', ''));
         if (currentMonthlyPrice.amount !== monthlyPriceInt) {
@@ -220,7 +218,6 @@ export class ProductsService {
         (price) => price.interval === PriceInterval.Year,
       );
 
-      // TODO: switch existing customer subscriptions to new price
       if (yearlyPriceAmount !== undefined) {
         const yearlyPriceInt = Number(yearlyPriceAmount.replace('.', ''));
         if (currentYearlyPrice.amount !== yearlyPriceInt) {

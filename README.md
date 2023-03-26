@@ -16,6 +16,7 @@ This project uses [node-config](https://github.com/lorenwest/node-config) for co
 module.exports = {
   stripe: {
     secretKey: 'sk_test_***',
+    publishableKey: 'sk_test_***',
   },
 };
 ```
@@ -41,7 +42,7 @@ module.exports = {
 5. Open the swagger UI in your browser:
 
    ```bash
-   open http://localhost:3000/api
+   open http://localhost:3003/api
    ```
 
 ## Entity Relationships

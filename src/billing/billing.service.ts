@@ -139,7 +139,6 @@ export class BillingService {
     } catch (e) {
       throw new InternalServerErrorException(e.message);
     }
-    console.log(stripeSubscription);
     const latestInvoice = stripeSubscription.latest_invoice as Stripe.Invoice;
     const paymentIntent = latestInvoice.payment_intent as Stripe.PaymentIntent;
     const subscription = await this.subscriptionModel.create({
@@ -177,7 +176,6 @@ export class BillingService {
           expand: ['default_payment_method'],
         },
       );
-      console.log('stripeSubscription', stripeSubscription);
     } catch (e) {
       throw new InternalServerErrorException(e.message);
     }
