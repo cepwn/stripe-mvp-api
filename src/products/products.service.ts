@@ -24,7 +24,7 @@ export class ProductsService {
     private readonly sequelize: Sequelize,
   ) {}
 
-  private tranformProductToDto(product: Product): ProductResponseDto {
+  private transformProductToDto(product: Product): ProductResponseDto {
     const { id, name, active, features, mostPopular } = product;
 
     const monthlyPrice = product.prices.find(
@@ -32,8 +32,11 @@ export class ProductsService {
     );
 
     let monthlyPriceAmount = null;
+    let monthlyPriceId = null;
+
     if (monthlyPrice) {
       monthlyPriceAmount = `${(monthlyPrice.amount / 100).toFixed(2)}`;
+      monthlyPriceId = monthlyPrice.id;
     }
 
     const yearlyPrice = product.prices.find(
@@ -41,13 +44,17 @@ export class ProductsService {
     );
 
     let yearlyPriceAmount = null;
+    let yearlyPriceId = null;
 
     if (yearlyPrice) {
       yearlyPriceAmount = `${(yearlyPrice.amount / 100).toFixed(2)}`;
+      yearlyPriceId = yearlyPrice.id;
     }
 
     return new ProductResponseDto({
       id,
+      monthlyPriceId,
+      yearlyPriceId,
       name,
       features,
       monthlyPriceAmount,
@@ -66,7 +73,7 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
-    return this.tranformProductToDto(product);
+    return this.transformProductToDto(product);
   }
 
   public async getProducts(): Promise<ProductResponseDto[]> {
@@ -77,7 +84,7 @@ export class ProductsService {
     const response = [] as ProductResponseDto[];
 
     for (const product of products) {
-      response.push(this.tranformProductToDto(product));
+      response.push(this.transformProductToDto(product));
     }
 
     response.sort(
@@ -272,6 +279,6 @@ export class ProductsService {
       await product.destroy({ transaction: t });
     });
 
-    return this.tranformProductToDto(product);
+    return this.transformProductToDto(product);
   }
 }

@@ -7,6 +7,7 @@ module.exports = {
     password: 'postgres',
     database: 'postgres',
     autoLoadModels: true,
+    synchronize: true,
   },
   jwt: {
     secret: 'stripe_mvp_api_jwt_secret',
@@ -14,5 +15,6 @@ module.exports = {
   },
   stripe: {
     secretKey: null,
+    publishableKey: null,
   },
 };

@@ -11,7 +11,12 @@ import { User } from '../users/user.model';
 import Stripe from 'stripe';
 import { Subscription } from './subscription.model';
 import { fromUnixTime } from 'date-fns';
-import { PostSubscriptionResponseDto } from './billing.dto';
+import {
+  InitSubscriptionResponseDto,
+  StripePublishableKeyResponseDto,
+  SubscriptionResponseDto,
+} from './billing.dto';
+import config from 'config';
 
 @Injectable()
 export class BillingService {
@@ -25,10 +30,86 @@ export class BillingService {
     private readonly subscriptionModel: typeof Subscription,
   ) {}
 
+  public async deleteSubscription(
+    userId: string,
+    subscriptionId: string,
+  ): Promise<SubscriptionResponseDto> {
+    const subscription = await this.subscriptionModel.findOne({
+      where: { id: subscriptionId, userId },
+      include: ['product', 'price'],
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found for user');
+    }
+
+    const { stripeSubscriptionId } = subscription;
+
+    try {
+      await this.stripeClient.subscriptions.cancel(stripeSubscriptionId);
+    } catch (e) {
+      throw new InternalServerErrorException(e.message);
+    }
+
+    await subscription.destroy();
+    return this.transformSubscriptionToDto(subscription);
+  }
+
+  public async getSubscriptionsByUserId(
+    userId: string,
+  ): Promise<SubscriptionResponseDto[]> {
+    const subscriptions = await this.subscriptionModel.findAll({
+      where: { userId, initialEnrollment: true },
+      include: ['product', 'price'],
+    });
+
+    return subscriptions.map((subscription) =>
+      this.transformSubscriptionToDto(subscription),
+    );
+  }
+
+  private transformSubscriptionToDto(
+    subscription: Subscription,
+  ): SubscriptionResponseDto {
+    const {
+      id,
+      active,
+      cardLast4,
+      cardName,
+      currentPeriodStart,
+      currentPeriodEnd,
+      product,
+      price,
+    } = subscription;
+
+    const { name: productName } = product;
+    const { amount, interval: priceInterval } = price;
+
+    const priceAmount = `${(amount / 100).toFixed(2)}`;
+
+    return new SubscriptionResponseDto({
+      id,
+      active,
+      cardLast4,
+      cardName,
+      currentPeriodStart,
+      currentPeriodEnd,
+      productName,
+      priceAmount,
+      priceInterval,
+    });
+  }
+
+  public async getPublishableKey(): Promise<StripePublishableKeyResponseDto> {
+    return new StripePublishableKeyResponseDto({
+      publishableKey: config.get<string>('stripe.publishableKey'),
+    });
+  }
+
   public async postSubscription(
     priceId: string,
     userId: string,
-  ): Promise<PostSubscriptionResponseDto> {
+  ): Promise<InitSubscriptionResponseDto> {
     const user = await this.userModel.findByPk(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -49,12 +130,16 @@ export class BillingService {
         customer: stripeCustomerId,
         items: [{ price: stripePriceId }],
         payment_behavior: 'default_incomplete',
-        payment_settings: { save_default_payment_method: 'on_subscription' },
+        payment_settings: {
+          save_default_payment_method: 'on_subscription',
+          payment_method_types: ['card'],
+        },
         expand: ['latest_invoice.payment_intent'],
       });
     } catch (e) {
       throw new InternalServerErrorException(e.message);
     }
+    console.log(stripeSubscription);
     const latestInvoice = stripeSubscription.latest_invoice as Stripe.Invoice;
     const paymentIntent = latestInvoice.payment_intent as Stripe.PaymentIntent;
     const subscription = await this.subscriptionModel.create({
@@ -62,21 +147,24 @@ export class BillingService {
       userId,
       priceId,
       productId,
-      nextBilling: fromUnixTime(stripeSubscription.current_period_end),
+      currentPeriodEnd: fromUnixTime(stripeSubscription.current_period_end),
+      currentPeriodStart: fromUnixTime(stripeSubscription.current_period_start),
     });
     const response = {
       clientSecret: paymentIntent.client_secret,
       subscriptionId: subscription.id,
     };
 
-    return new PostSubscriptionResponseDto(response);
+    return new InitSubscriptionResponseDto(response);
   }
 
   // FIXME: Remove this method, only used for temporary flow without webhooks
   public async refreshSubscription(
     subscriptionId: string,
-  ): Promise<Subscription> {
-    const subscription = await this.subscriptionModel.findByPk(subscriptionId);
+  ): Promise<SubscriptionResponseDto> {
+    const subscription = await this.subscriptionModel.findByPk(subscriptionId, {
+      include: ['product', 'price'],
+    });
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
@@ -85,15 +173,55 @@ export class BillingService {
     try {
       stripeSubscription = await this.stripeClient.subscriptions.retrieve(
         stripeSubscriptionId,
+        {
+          expand: ['default_payment_method'],
+        },
       );
+      console.log('stripeSubscription', stripeSubscription);
     } catch (e) {
       throw new InternalServerErrorException(e.message);
     }
-    subscription.nextBilling = fromUnixTime(
+    subscription.currentPeriodStart = fromUnixTime(
+      stripeSubscription.current_period_start,
+    );
+    subscription.currentPeriodEnd = fromUnixTime(
       stripeSubscription.current_period_end,
     );
     subscription.active = stripeSubscription.status === 'active';
-    return subscription.save();
+    subscription.cardName =
+      stripeSubscription.default_payment_method?.card.brand;
+    subscription.cardLast4 =
+      stripeSubscription.default_payment_method?.card.last4;
+    subscription.initialEnrollment = true;
+
+    const updatedSubscripton = await subscription.save();
+
+    const { product, price } = subscription;
+
+    const {
+      active,
+      cardLast4,
+      cardName,
+      currentPeriodStart,
+      currentPeriodEnd,
+    } = updatedSubscripton;
+
+    const { name: productName } = product;
+    const { amount, interval: priceInterval } = price;
+
+    const priceAmount = `${(amount / 100).toFixed(2)}`;
+
+    return new SubscriptionResponseDto({
+      id: subscriptionId,
+      active,
+      cardLast4,
+      cardName,
+      currentPeriodStart,
+      currentPeriodEnd,
+      productName,
+      priceAmount,
+      priceInterval,
+    });
   }
 
   public async postCustomer(email: string): Promise<Stripe.Customer> {

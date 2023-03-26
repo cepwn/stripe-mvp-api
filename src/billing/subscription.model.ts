@@ -45,7 +45,17 @@ export class Subscription extends Model {
       isDate: true,
     },
   })
-  public nextBilling: Date;
+  public currentPeriodEnd: Date;
+
+  @ApiProperty()
+  @Column({
+    type: 'TIMESTAMP',
+    allowNull: false,
+    validate: {
+      isDate: true,
+    },
+  })
+  public currentPeriodStart: Date;
 
   @ApiProperty()
   @Column({
@@ -56,6 +66,16 @@ export class Subscription extends Model {
     },
   })
   public active: boolean;
+
+  @ApiProperty()
+  @Column({
+    allowNull: false,
+    defaultValue: false,
+    validate: {
+      isBoolean: true,
+    },
+  })
+  public initialEnrollment: boolean;
 
   @ApiProperty({ nullable: true })
   @Column({

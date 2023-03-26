@@ -1,15 +1,23 @@
 import {
   Controller,
+  Delete,
+  Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { PostSubscriptionResponseDto } from './billing.dto';
+import { GetUser } from 'src/users/auth/get-user.decorator';
+import { User } from 'src/users/user.model';
+import {
+  InitSubscriptionResponseDto,
+  StripePublishableKeyResponseDto,
+  SubscriptionResponseDto,
+} from './billing.dto';
 import { BillingService } from './billing.service';
-import { Subscription } from './subscription.model';
 
 @ApiBearerAuth()
 @ApiTags('billing')
@@ -20,27 +28,63 @@ export class BillingController {
   @ApiOkResponse({
     description:
       'Subscribe a user to a product price locally and against stripe',
-    type: PostSubscriptionResponseDto,
+    type: InitSubscriptionResponseDto,
   })
-  @Post('prices/:priceId/users/:userId/subscribe')
+  @Post('subscriptions/prices/:priceId')
   @UseGuards(AuthGuard())
   public async postSubscription(
     @Param('priceId', ParseUUIDPipe) priceId: string,
-    @Param('userId', ParseUUIDPipe) userId: string,
-  ): Promise<PostSubscriptionResponseDto> {
-    return this.billingService.postSubscription(priceId, userId);
+    @GetUser() user: User,
+  ): Promise<InitSubscriptionResponseDto> {
+    return this.billingService.postSubscription(priceId, user.id);
   }
 
   @ApiOkResponse({
     description: 'Sync subscription with stripe (temporary/mvp purposes only)',
-    type: PostSubscriptionResponseDto,
+    type: SubscriptionResponseDto,
   })
   // FIXME: Remove this endpoint, only used for temporary flow without webhooks
-  @Post('subscriptions/:subscriptionId')
+  @Patch('subscriptions/:subscriptionId')
   @UseGuards(AuthGuard())
   public async refreshSubscription(
     @Param('subscriptionId', ParseUUIDPipe) subscriptionId: string,
-  ): Promise<Subscription> {
+  ): Promise<SubscriptionResponseDto> {
     return this.billingService.refreshSubscription(subscriptionId);
+  }
+
+  @ApiOkResponse({
+    description:
+      'Retrieve stripe publishable key for client side stripe integration',
+    type: StripePublishableKeyResponseDto,
+  })
+  @Get('stripe-publishable-key')
+  @UseGuards(AuthGuard())
+  public async getPublishableKey(): Promise<StripePublishableKeyResponseDto> {
+    return this.billingService.getPublishableKey();
+  }
+
+  @ApiOkResponse({
+    description: 'Retrieve subscriptions for user',
+    type: [SubscriptionResponseDto],
+  })
+  @Get('subscriptions')
+  @UseGuards(AuthGuard())
+  public async getSubscriptionsByUserId(
+    @GetUser() user: User,
+  ): Promise<SubscriptionResponseDto[]> {
+    return this.billingService.getSubscriptionsByUserId(user.id);
+  }
+
+  @ApiOkResponse({
+    description: 'Soft delete subscription and unsubscribe from stripe',
+    type: [SubscriptionResponseDto],
+  })
+  @Delete('subscriptions/:subscriptionId')
+  @UseGuards(AuthGuard())
+  public async deleteSubscription(
+    @Param('subscriptionId', ParseUUIDPipe) subscriptionId: string,
+    @GetUser() user: User,
+  ): Promise<SubscriptionResponseDto> {
+    return this.billingService.deleteSubscription(user.id, subscriptionId);
   }
 }

@@ -77,6 +77,14 @@ export class ProductResponseDto extends ValidatorReady {
   public id: string;
 
   @ApiProperty()
+  @IsUUID(4)
+  public monthlyPriceId: string;
+
+  @ApiProperty()
+  @IsUUID(4)
+  public yearlyPriceId: string;
+
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
   public name: string;
