@@ -190,6 +190,10 @@ export class ProductsService {
         (price) => price.interval === PriceInterval.Month,
       );
 
+      /**
+       * TODO: Handle price change on subcription object
+       * @see https://stripe.com/docs/billing/subscriptions/upgrade-downgrade
+       */
       if (monthlyPriceAmount !== undefined) {
         const monthlyPriceInt = Number(monthlyPriceAmount.replace('.', ''));
         if (currentMonthlyPrice.amount !== monthlyPriceInt) {
@@ -218,6 +222,10 @@ export class ProductsService {
         (price) => price.interval === PriceInterval.Year,
       );
 
+      /**
+       * TODO: Handle price change on subcription object
+       * @see https://stripe.com/docs/billing/subscriptions/upgrade-downgrade
+       */
       if (yearlyPriceAmount !== undefined) {
         const yearlyPriceInt = Number(yearlyPriceAmount.replace('.', ''));
         if (currentYearlyPrice.amount !== yearlyPriceInt) {
